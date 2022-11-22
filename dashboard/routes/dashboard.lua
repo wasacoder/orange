@@ -153,6 +153,10 @@ return function(config, store)
         res:render("divide")
     end)
 
+    dashboard_router:get("/encrypt", function(req, res, next)
+        res:render("encrypt")
+    end)
+
     dashboard_router:get("/kvstore", function(req, res, next)
         res:render("kvstore")
     end)

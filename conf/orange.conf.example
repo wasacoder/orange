@@ -7,6 +7,7 @@
         "rate_limiting",
         "property_rate_limiting",
         "basic_auth",
+        "encrypt",
         "key_auth",
         "signature_auth",
         "waf",
