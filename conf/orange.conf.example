@@ -14,6 +14,7 @@
         "divide",
         "kvstore"
     ],
+    "encryptpwd":"WfSVH9sfkdDS.",
     "store": "mysql",
     "store_mysql": {
         "timeout": 5000,

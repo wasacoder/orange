@@ -11,10 +11,8 @@ local BasePlugin = require("orange.plugins.base_handler")
 local cjson = require "cjson"
 local encode_base64 = ngx.encode_base64
 local decode_base64 = ngx.decode_base64
-local resty_sm4 = require "resty.sm4"
-local key = "qawsedrftgyhujik"
-local sm4 = resty_sm4:new(key)
 
+local AES256 = require("aes_everywhere")
 
 local function ensure_end(uri)
     if not stringy.endswith(uri, "/") then
@@ -42,7 +40,6 @@ local function filter_rules(sid, plugin, ngx_var, ngx_var_uri, ngx_var_host)
                 if rule.log == true then
                     ngx.log(ngx.INFO, "[Encrypt-Match-Rule] ", rule.name, " host:", ngx_var_host, " uri:", ngx_var_uri)
                 end
-
                 local extractor_type = rule.extractor.type
 
 
@@ -50,10 +47,13 @@ local function filter_rules(sid, plugin, ngx_var, ngx_var_uri, ngx_var_host)
                 -- 强制定义为identity， 不做任何压缩
                 ngx.req.set_header("Accept-Encoding", "identity")
                 local method = ngx.var.request_method
+                local args = ngx.req.get_uri_args()
+
 
                 local encrypt
+                local pwd = context.config.encryptpwd
+
                 if "GET" == method then
-                    local args = ngx.req.get_uri_args()
                     encrypt = args['e']
                 elseif "POST" == method then
                     ngx.req.read_body()
@@ -62,33 +62,23 @@ local function filter_rules(sid, plugin, ngx_var, ngx_var_uri, ngx_var_host)
                 end
                 -- 获取加密后字符串
                 if encrypt ~= nil then
-                    --local decrypt = sm4:decrypt("TsVDX/XWiZYLOjtAQFvEKpWx3yIDxam93NnHaUzV2ww=");
-
-                    local text = 'test'
-                    local sm4 = resty_sm4:new(key)
-                    --# 加密
-                    local en_text = sm4:encrypt(text)
-                    print(en_text)
-                    --#解密
-                    local de_text = sm4:decrypt(text)
-                    print(en_text)
-                    --local decrypt = encrypt;
+                    local decrypt = AES256.decrypt(encrypt, pwd);
 
                     ngx.log(ngx.INFO, "[Encrypt-Match-Rule:URL] ", rule.name, " extractor_type: ", extractor_type, " uri_args: ", encrypt);
                     ngx.log(ngx.INFO, "[Encrypt-Match-Rule:URL] ", rule.name, " extractor_type: ", extractor_type, " decrypt: ", decrypt);
 
                     local decode_decrypt = cjson.decode(decrypt)
-                    ngx.log(ngx.INFO, "[Encrypt-Match-Rule:URL] ", rule.name, " extractor_type: ", extractor_type, " decode_decrypt: ", decode_decrypt);
-
                     if type(decode_decrypt) == "table" then
+                        for k,v in pairs(decode_decrypt) do 
+                            args[k] = v
+                        end
+                        args['e'] = nil
                         if "GET" == method then
-                            ngx.req.set_uri_args("eee=123")
+                            ngx.req.set_uri_args(args)
                         elseif "POST" == method then
                             ngx.req.set_body_data(decrypt)
                         end
                     end
-                    ngx.log(ngx.INFO, "[Encrypt-Match-Rule:URL] ", rule.name, " extractor_type: ", extractor_type, " uri: ", decrypt);
-
                 end
                 return true
             else
@@ -118,7 +108,6 @@ function EncryptHandler:access(conf)
     local meta = orange_db.get_json("encrypt.meta")
     local selectors = orange_db.get_json("encrypt.selectors")
     local ordered_selectors = meta and meta.selectors
-    
     if not enable or enable ~= true or not meta or not ordered_selectors or not selectors then
         return
     end
