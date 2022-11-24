@@ -8,8 +8,8 @@ To install openssl using luarocks
 ## 前端应使用aes-everywhere中的js版本进行encrypt
 
 ## Confinguration
-add 'encrypt' in orange.conf.plugins
-add 'encryptpwd' in orange.conf. the passwd should be equal with passwd used in axios.
+ - add 'encrypt' in orange.conf.plugins
+ - add 'encryptpwd' in orange.conf. the passwd should be equal with passwd used in axios.
 
-see axios interceptor example in /orange/plugins/encrypt/aes
-execute install/encrypt.sql to add encrypt plugin configs in mysql.
+ - see axios interceptor example in /orange/plugins/encrypt/aes
+ - execute install/encrypt.sql to add encrypt plugin configs in mysql.
